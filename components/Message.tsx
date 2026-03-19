@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message as MessageType, MessageStatus } from '../types';
 import AudioPlayer from './AudioPlayer';
+import MermaidRenderer from './MermaidRenderer';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { PaperclipIcon } from './icons/PaperclipIcon';
 import { CopyIcon } from './icons/CopyIcon';
@@ -19,6 +20,7 @@ interface MessageProps {
 const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
   const [isCopied, setIsCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
+  const lang = match?.[1];
   const textToCopy = String(children).replace(/\n$/, '');
 
   const handleCopy = () => {
@@ -29,6 +31,11 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
       console.error("Failed to copy code: ", err);
     });
   };
+
+  // To manage Mermaid renderer
+  if (!inline && lang === 'mermaid') {
+    return <MermaidRenderer chart={textToCopy} />;
+  }
 
   return !inline && match ? (
     <div className="bg-neutral-950 rounded-md my-2 relative group border border-neutral-800">
@@ -53,15 +60,14 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
   );
 };
 
-
 const markdownComponents = {
   h1: ({node, ...props}: any) => <h1 className="text-2xl font-bold my-3" {...props} />,
   h2: ({node, ...props}: any) => <h2 className="text-xl font-bold my-3" {...props} />,
   h3: ({node, ...props}: any) => <h3 className="text-lg font-bold my-2" {...props} />,
   p: ({node, ...props}: any) => <p className="mb-2 last:mb-0" {...props} />,
   a: ({node, ...props}: any) => <a className="text-indigo-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-  ul: ({node, ...props}: any) => <ul className="list-disc list-inside my-2 space-y-1" {...props} />,
-  ol: ({node, ...props}: any) => <ol className="list-decimal list-inside my-2 space-y-1" {...props} />,
+  ul: ({node, ...props}: any) => <ul className="list-disc list-outside my-2 space-y-1" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="list-decimal list-outside my-2 space-y-1" {...props} />,
   li: ({node, ...props}: any) => <li className="pl-2" {...props} />,
   blockquote: ({node, ...props}: any) => <blockquote className="border-l-4 border-neutral-700 pl-4 my-2 italic text-neutral-400" {...props} />,
   code: CodeBlock,
@@ -76,7 +82,7 @@ const markdownComponents = {
 const MessageBubble: React.FC<MessageProps> = ({ message }) => {
   const isUser = message.sender === 'user';
   const [isCopied, setIsCopied] = useState(false);
-  
+
   const bubbleClasses = isUser
     ? 'bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 rounded-br-none'
     : 'bg-neutral-900 rounded-bl-none';
@@ -131,7 +137,7 @@ const MessageBubble: React.FC<MessageProps> = ({ message }) => {
     switch (message.type) {
       case 'text':
         return (
-          <div className="text-white whitespace-pre-wrap break-words">
+          <div className="text-white break-words">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={markdownComponents}
@@ -172,7 +178,7 @@ const MessageBubble: React.FC<MessageProps> = ({ message }) => {
             </button>
         </div>
       )}
-      <div className={`rounded-lg p-3 max-w-[85%] sm:max-w-lg shadow-md ${bubbleClasses} overflow-hidden`}>
+      <div className={`rounded-lg p-3 w-full mx-4 shadow-md ${bubbleClasses} overflow-hidden`}>
         {renderContent()}
         <div className={`flex items-center mt-1.5 gap-1.5 justify-end`}>
             <p className={`text-xs ${isUser ? 'text-indigo-200' : 'text-neutral-500'}`}>
